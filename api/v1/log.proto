@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package log.v1;
 
-option go_package = "github.com/alizoubair/log/api/v1";
+option go_package = "github.com/alizoubair/log/api/log_v1";
 
 service Log {
     rpc Produce(ProduceRequest) returns (ProduceResponse) {}
