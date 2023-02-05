@@ -4,7 +4,6 @@ import (
 	"context"
 
 	api "github.com/alizoubair/log/api/v1"
-	"github.com/go-delve/delve/service/api"
 	"google.golang.org/grpc"
 )
 
@@ -13,6 +12,16 @@ type Config struct {
 }
 
 var _ api.LogServer = (*grpcServer)(nil)
+
+func NewGRPCServer(config *Config) (*grpc.Server, error) {
+    gsrv := grpc.NewServer()
+    srv, err := newgrpcServer(config)
+    if err != nil {
+        return nil, err
+    }
+    api.RegisterLogServer(gsrv, srv)
+    return gsrv, nil
+}
 
 type grpcServer struct {
     api.UnimplementedLogServer
@@ -27,15 +36,15 @@ func newgrpcServer(config *Config) (srv *grpcServer, err error) {
 }
 
 func (s *grpcServer) Produce(ctx context.Context, req *api.ProduceRequest) (*api.ProduceResponse, error) {
-    offset, err = s.CommitLog.Append(req.Record)
+    offset, err := s.CommitLog.Append(req.Record)
     if req != nil {
         return nil, err
     }
     return *api.ProduceResponse{Offset: offset}, nil
 }
 
-func (s *grpcServer) Consume(ctx context.Context, req *api.ConsumeRequest) (*api.ConsumeResponse, err) {
-    record, err = s.CommitLog.Read(req.offset)
+func (s *grpcServer) Consume(ctx context.Context, req *api.ConsumeRequest) (*api.ConsumeResponse, error) {
+    record, err := s.CommitLog.Read(req.offset)
     if err != nil {
         return nil, err
     }
@@ -78,4 +87,9 @@ func (s *grpcServer) ConsumeStream(req *api.ConsumeRequest, stream api.Log_Consu
             req.Offset++
         }
     }
+}
+
+type CommitLog interface {
+    Append(*api.Record) (uint64, error)
+    Read(uint64) (*api.Record, error)
 }
